@@ -18,7 +18,7 @@
 #define TANK_HEIGHT 19
 #define ECHO_OFFSET 0.8
 #define MIN_WATER 20
-#define WATERING_DURATION 15000
+#define WATERING_DURATION 10000
 
 // soil values
 #define DRY_SOIL 400
@@ -27,8 +27,9 @@
 // time in millis
 #define HOURS_22 79200000
 #define MINUTES_30 1800000
+#define HOURS_72 259200000
 
-#define WATERING_PERIODS 5
+#define WATERING_PERIODS 3
 
 
 #endif

@@ -14,7 +14,7 @@
 enum State {MEASURE, WATERING, REFILL, ERROR};
 State state = State::MEASURE;
 
-unsigned long timeTable[5] = {MINUTES_30, MINUTES_30, MINUTES_30, MINUTES_30, HOURS_22};
+unsigned long timeTable[3] = {MINUTES_30, MINUTES_30, HOURS_72};
 
 int sensorValue = 500;
 int wateringStart = 0;
