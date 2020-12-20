@@ -7,12 +7,21 @@
  */
 
 // PIN LAYOUT
-#define ECHO_TRIGGER 9
-#define ECHO 8
-#define LED_REFILL 10
-#define RELAIS_TRIGGER 6
-#define SENSOR 12
-#define MANUAL_TRIGGER 11
+
+// RTC connectors
+#define RTC_SCL A5
+#define RTC_SDA A4
+#define RTC_VCC A3
+#define RTC_GND A2
+
+// sensors and motor
+#define ECHO_TRIGGER 7
+#define ECHO 6
+#define LED_REFILL 3
+#define RELAIS_TRIGGER 2
+#define SENSOR 5
+#define MANUAL_TRIGGER 4
+// PINS 8 – 13 are reserved for the display
 
 // constants
 #define TANK_HEIGHT 19
@@ -28,8 +37,5 @@
 #define HOURS_22 79200000
 #define MINUTES_30 1800000
 #define HOURS_72 259200000
-
-#define WATERING_PERIODS 3
-
 
 #endif

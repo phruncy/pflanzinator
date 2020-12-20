@@ -1,48 +1,48 @@
 /**
- * Messwert-Referenzen (komplette Flächer):  
- * Wasser: ca 630
- * sehr trockene Erde: ca 150
- * trockene Erde: ca. 300 - 350
- * feuchte Erde: 680 - 750
- * Erde direkt nach dem Gießen: ca 750
- * ----> gießen unter: 300
- * ----> NICHT gießen unter: 50 (Schutz vor Überschwemmung)
+ * planzuino v0.1
+ * @author Franziska Schneider
+ * 
+ * circuit based on the Garduino by Luke Iseman: https://www.instructables.com/Garduino-Gardening-Arduino/
+ * distance sensor code by Ardutronix: https://ardutronix.de/wasserstandssensor-selber-bauen/
+ * 
  */
 
+#define DEBUG
+#include "RTClib.h"
 #include "config.h"
+
+RTC_DS3231 rtc;
 
 enum State {MEASURE, WATERING, REFILL, ERROR};
 State state = State::MEASURE;
 
-unsigned long timeTable[3] = {MINUTES_30, MINUTES_30, HOURS_72};
-
-int sensorValue = 500;
 int wateringStart = 0;
 unsigned long timerStart = 0;
 int timeTableIndex  = 0;
 
 void setup() {
+  setPins();
+  delay(100);
   Serial.begin(9600);
-  pinMode(ECHO_TRIGGER, OUTPUT);
-  pinMode(ECHO, INPUT);
-  pinMode(LED_REFILL, OUTPUT);
-  pinMode(RELAIS_TRIGGER, OUTPUT);
-  pinMode(SENSOR, INPUT);
-  pinMode(MANUAL_TRIGGER, INPUT);
-  digitalWrite(RELAIS_TRIGGER, HIGH);
-  digitalWrite(LED_REFILL, LOW);
   // initialize timerStart
+  if (! rtc.begin()) {
+    Serial.println("Could not find RTC");
+    Serial.flush();
+    abort();
+  }
+  if (rtc.lostPower()) {
+    Serial.println("RTC lost power / please set time");
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
   timerStart = millis();
 }
 
 void loop() {
-    unsigned long timePassed = millis() - timerStart;
-    Serial.write("Time passed in current counter: ");
-    Serial.print(timePassed / 1000);
-    Serial.write("schedule index: ");
-    Serial.println(timeTableIndex);
-//    Serial.write("Schedule nr: ");
-//    Serial.println(timeTableIndex);
+
+    #ifdef DEBUG
+      printTime();
+    #endif
+    
     switch(state) {
         case State::MEASURE:
             if (!hasWater()) {
@@ -50,11 +50,10 @@ void loop() {
                 break;
             }
             digitalWrite(LED_REFILL, LOW);
-            if (digitalRead(MANUAL_TRIGGER) || timePassed > timeTable[timeTableIndex]) {
+            // startWatering if schedule says so or if manually triggered
+            if (digitalRead(MANUAL_TRIGGER) || isWateringScheduled()) {
                 state = State::WATERING;
                 wateringStart = millis();
-                timerStart = millis();
-                timeTableIndex = (timeTableIndex + 1) % WATERING_PERIODS;
             }
             break;
         case State::WATERING:
@@ -72,14 +71,18 @@ void waterRoutine()
 {
     int wateringTime = millis() - wateringStart;
     digitalWrite(RELAIS_TRIGGER, LOW);
-//    Serial.write("Watering: ");
-//   Serial.println(wateringTime);
     if (wateringTime >= WATERING_DURATION) {
         digitalWrite(RELAIS_TRIGGER, HIGH);
         state = State::MEASURE;
     }
 }
 
+bool isWateringScheduled() 
+{
+  return false;
+}
+
+// measure the distance from echo to surface to determine if there is still enough water in the tank
 bool hasWater()  
 {
     digitalWrite(ECHO_TRIGGER, LOW);
@@ -96,10 +99,42 @@ bool hasWater()
         return false;
     } 
     float percentage = 100 - (((waterDistance - ECHO_OFFSET) * 100) / TANK_HEIGHT);
-    //Serial.write("gemessene Distanz: ");
-    //Serial.print(waterDistance);
-    //Serial.write(", Wasserfüllstand: ");
-    //Serial.print(percentage);
-    //Serial.println('\n');
     return percentage >= MIN_WATER;
+}
+
+// attach all pins according to config.h
+void setPins() 
+{
+  pinMode(RTC_SCL, INPUT);
+  pinMode(RTC_SDA, INPUT);
+  pinMode(RTC_VCC, OUTPUT);
+  digitalWrite(RTC_VCC, HIGH);
+  pinMode(RTC_GND, OUTPUT);
+  digitalWrite(RTC_GND, LOW);
+  pinMode(ECHO_TRIGGER, OUTPUT);
+  pinMode(ECHO, INPUT);
+  pinMode(LED_REFILL, OUTPUT);
+  pinMode(RELAIS_TRIGGER, OUTPUT);
+  pinMode(SENSOR, INPUT);
+  pinMode(MANUAL_TRIGGER, INPUT);
+  digitalWrite(RELAIS_TRIGGER, HIGH);
+  digitalWrite(LED_REFILL, LOW);
+}
+
+// just for debugging
+void printTime() 
+{
+    DateTime now = rtc.now();
+    Serial.print(now.year(), DEC);
+    Serial.print('/');
+    Serial.print(now.month(), DEC);
+    Serial.print('/');
+    Serial.print(now.day(), DEC);
+    Serial.print(" ,");
+    Serial.print(now.hour(), DEC);
+    Serial.print(":");
+    Serial.print(now.minute(), DEC);
+    Serial.print(":");
+    Serial.print(now.second(), DEC);
+    Serial.println();
 }
